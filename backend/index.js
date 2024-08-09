@@ -60,8 +60,7 @@ app.get("/login", (req, res) => {
 });
 
 
-app.get("/callback", (req, res) => {
-
+app.get('/callback', (req, res) => {
   const code = req.query.code || null;
 
   axios({
@@ -74,32 +73,28 @@ app.get("/callback", (req, res) => {
     }),
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${new Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`
+      Authorization: `Basic ${new Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`,
     },
   })
-  .then(response => {
-    if (response.status === 200) {
-      
-      const { access_token, refresh_token } = response.data;
+    .then(response => {
+      if (response.status === 200) {
+        const { access_token, refresh_token, expires_in } = response.data;
 
-      axios.get(`https://api.spotify.com/v1/me`, {
-        headers: {
-          'Authorization': `Bearer ${access_token}`
-        }
-      })
-      .then(response => {
-        res.send(`<pre>${JSON.stringify(response.data, null, 2)}</pre>`);
-      })
-      .catch(error => {
-        res.send(error);
-      });
-    } else {
-      res.send(response);
-    }
-  })
-  .catch(error => {
-    res.send(error);
-  });
+        const queryParams = querystring.stringify({
+          access_token,
+          refresh_token,
+          expires_in,
+        });
+
+        res.redirect(`http://localhost:3000/?${queryParams}`);
+
+      } else {
+        res.redirect(`/?${querystring.stringify({ error: 'invalid_token' })}`);
+      }
+    })
+    .catch(error => {
+      res.send(error);
+    });
 });
 
 app.get("/refresh_token", (req, res) => {
